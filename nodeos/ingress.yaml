@@ -990,7 +990,7 @@ spec:
     spec:
       serviceAccountName: nodeos-ingress
       containers:
-      - image: nginx/nodeos-ingress:1.7.1
+      - image: nginx/nginx-ingress:1.7.1
         name: nodeos-ingress
         ports:
         - name: http
