@@ -3,31 +3,38 @@ kind: Namespace
 metadata:
   name: nodeos
 ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: nodeos-svc
-#   namespace: nodeos
-#   labels:
-#     app: nodeos
-# spec:
-  
-#   # type: ClusterIP
-#   # externalTrafficPolicy: Local
-#   clusterIP: None
-#   ports:
-#   - port: 80
-#     targetPort: 80
-#     protocol: TCP
-#     name: http
-#   - port: 443
-#     targetPort: 443
-#     protocol: TCP
-#     name: https
-#   selector:
-#     app: nodeos
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeos-svc
+  namespace: nodeos
+  labels:
+    app: nodeos
+spec:
+  type: ClusterIP
+  # externalTrafficPolicy: Local
+  clusterIP: None
+  ports:
+  - port: 8888
+    targetPort: 8888
+    protocol: TCP
+    name: server
+  - port: 9000
+    targetPort: 9000
+    protocol: TCP
+    name: p2p
+  # - port: 80
+  #   targetPort: 80
+  #   protocol: TCP
+  #   name: http
+  # - port: 443
+  #   targetPort: 443
+  #   protocol: TCP
+  #   name: https
+  selector:
+    app: nodeos
 
-# ---
+---
 
 
 apiVersion: networking.k8s.io/v1beta1
@@ -50,6 +57,16 @@ spec:
         backend:
           serviceName: nodeos-svc
           servicePort: 9000
+    https:
+      paths:
+      - path: /
+        backend:
+          serviceName: nodeos-svc
+          servicePort: 8888
+      - path: /master/p2p
+        backend:
+          serviceName: nodeos-svc
+          servicePort: 9000
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -59,12 +76,12 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      app: nodeos
+      name: nodeos
   serviceName: nodeos-svc
   template:
     metadata:
       labels:
-        app: nodeos
+        name: nodeos
     spec:
       containers:
       - name: nodeos
@@ -96,7 +113,7 @@ spec:
             fieldRef:
               fieldPath: status.podIP
         ports:
-          - containerPort: 80
-          - containerPort: 443
           - containerPort: 8888
+            name: server
           - containerPort: 9000
+            name: p2p
