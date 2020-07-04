@@ -32,7 +32,7 @@ spec:
   #   protocol: TCP
   #   name: https
   selector:
-    app: nodeos
+    name: nodeos
 
 ---
 
@@ -48,16 +48,6 @@ spec:
   rules:
   - host: "nodeos.helixious.local"
     http:
-      paths:
-      - path: /
-        backend:
-          serviceName: nodeos-svc
-          servicePort: 8888
-      - path: /master/p2p
-        backend:
-          serviceName: nodeos-svc
-          servicePort: 9000
-    https:
       paths:
       - path: /
         backend:
