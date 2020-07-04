@@ -1,0 +1,405 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodeos
+spec:
+  selector:
+    matchLabels:
+      app: nodeos
+  template:
+    metadata:
+      labels:
+        app: nodeos
+    spec:
+      containers:
+      - name: nodeos
+        replica: 2
+        tty: true
+        image: helixious86/eos_base_image:centos7.v1.1.3
+        resources: {}
+        env:
+        - name: CDT_VERSION
+          value: v1.7.0
+        - name: EOS_VERSION
+          value: v2.0.3
+        - name: INSTANCE_TYPE
+          value: master
+        - name: P2P_PORT
+          value: "9000"
+        - name: SERVER_PORT
+          value: "8888"
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        ports:
+          - containerPort: 80
+          - containerPort: 443
+          - containerPort: 8888
+          - containerPort: 9000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeos-svc
+  
+spec:
+  type: ClusterIP
+  # type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 443
+    protocol: TCP
+  - name: server
+    port: 8888
+    targetPort: 8888
+    protocol: TCP
+  - name: p2p
+    port: 9000
+    targetPort: 9000
+    protocol: TCP
+  # clusterIP: None
+  selector:
+    name: nodeos
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nodeos-master
+  
+  labels:
+    name: nodeos
+spec:
+  hostname: master
+  subdomain: nodeos-svc
+  nodeName: docker-desktop
+  containers:
+  - name: nodeos
+    image: helixious86/eos_base_image:centos7.v1.1.3
+    imagePullPolicy: IfNotPresent
+    resources: {}
+    tty: true
+    volumeMounts:
+    - name: data
+      mountPath: /data
+      subPath: eos_bios_setup
+    workingDir: /data
+    env:
+    - name: CDT_VERSION
+      value: v1.7.0
+    - name: EOS_VERSION
+      value: v2.0.3
+    - name: INSTANCE_TYPE
+      value: master
+    - name: P2P_PORT
+      value: "9000"
+    - name: SERVER_PORT
+      value: "8888"
+    - name: MY_POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: MY_POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: MY_POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    ports:
+      - name: http 
+        containerPort: 80
+      - name: https
+        containerPort: 443
+      - name: server
+        containerPort: 8888
+      - name: p2p
+        containerPort: 9000
+  volumes:
+  - hostPath:
+      path: /Users/stephane/Documents/GitHub
+      type: ""
+    name: data
+  dnsPolicy: ClusterFirstWithHostNet
+# ---
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: nodeos-prod1
+  
+#   labels:
+#     name: nodeos
+# spec:
+#   hostname: prod1
+#   subdomain: nodeos-svc
+#   nodeName: docker-desktop
+#   containers:
+#   - name: nodeos
+#     image: helixious86/eos_base_image:centos7.v1.1.3
+#     imagePullPolicy: IfNotPresent
+#     resources: {}
+#     tty: true
+#     volumeMounts:
+#     - name: data
+#       mountPath: /data
+#       subPath: eos_bios_setup
+#     env:
+#     - name: CDT_VERSION
+#       value: v1.7.0
+#     - name: EOS_VERSION
+#       value: v2.0.3
+#     - name: INSTANCE_TYPE
+#       value: master
+#     - name: P2P_PORT
+#       value: "9000"
+#     - name: SERVER_PORT
+#       value: "8888"
+#     - name: MY_POD_NAME
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: metadata.name
+#     - name: MY_POD_NAMESPACE
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: metadata.namespace
+#     - name: MY_POD_IP
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: status.podIP
+#     workingDir: /data
+#     ports:
+#       - name: http 
+#         containerPort: 80
+#       - name: https
+#         containerPort: 443
+#       - name: server
+#         containerPort: 8888
+#       - name: p2p
+#         containerPort: 9000
+#   volumes:
+#   - hostPath:
+#       path: /Users/stephane/Documents/GitHub
+#       type: ""
+#     name: data
+#   dnsPolicy: ClusterFirstWithHostNet
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: node-a
+#   labels:
+#     eosio: nodoes
+# spec:
+#   hostname: node-a
+#   subdomain: nodeos-svc
+#   nodeName: docker-desktop
+#   containers:
+#   - name: node-a
+#     image: helixious86/eos_base_image:centos7.v1.1.3
+#     imagePullPolicy: IfNotPresent
+#     resources: {}
+#     tty: true
+#     volumeMounts:
+#     - name: data
+#       mountPath: /data
+#       subPath: eos_bios_setup
+#     workingDir: /data
+#     ports:
+#       - containerPort: 8888
+#       - containerPort: 9000
+#   volumes:
+#   - hostPath:
+#       path: /Users/stephane/Documents/GitHub
+#       type: ""
+#     name: data
+#   dnsPolicy: ClusterFirstWithHostNet
+# ---
+# ---
+# apiVersion: extensions/v1beta1
+# kind: Deployment
+# metadata:
+#   name: nginx-ingress-controller
+# spec:
+#   selector:
+#     matchLabels:
+#       app: nginx-ingress
+#   template:
+#     metadata:
+#       labels:
+#         app: nginx-ingress
+#     spec:
+#       containers:
+#       - name: nginx-ingress-controller
+#         image: <Image>
+#         args:
+#           - /nginx-ingress-controller
+#           - --configmap=$(POD_NAMESPACE)/nginx-configuration
+#         env:
+#           - name: MY_POD_NAME
+#             valueFrom:
+#               fieldRef:
+#                 fieldPath: metadata.name
+#           - name: MY_POD_NAMESPACE
+#             valueFrom:
+#               fieldRef:
+#                 fieldPath: metadata.namespace
+#           - name: MY_POD_IP
+#             valueFrom:
+#               fieldRef:
+#                 fieldPath: status.podIP
+#         ports:
+#           - name: http
+#             containerPort: 80
+#           - name: https
+#             containerPort: 443
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: nodeos-ingress
+  
+  annotations:
+    kubernetes.to/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: "helixious.local"
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: nodeos-svc
+          servicePort: 8888
+      - path: /master/p2p
+        backend:
+          serviceName: nodeos-svc
+          servicePort: 9000
+# apiVersion: extensions/v1beta1
+# kind: Ingress
+# metadata:
+#   name: nodeos-ingress-controller
+# spec:
+#   selector:
+#     matchLabels:
+#       app: nodeos-ingress
+#   template:
+#     metadata:
+#       labels:
+#         app: nodeos-ingress
+#     spec:
+#       containers:
+#       - name: nodeos-ingress-controller
+#         image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.31.1
+#         resources: {}
+#         args:
+#           - /nodeos-ingress-controller
+#           - --configmap=$(POD_NAMESPACE)/nginx-configuration
+#         env:
+#           - name: MY_POD_NAME
+#             valueFrom:
+#               fieldRef:
+#                 fieldPath: metadata.name
+#           - name: MY_POD_NAMESPACE
+#             valueFrom:
+#               fieldRef:
+#                 fieldPath: metadata.namespace
+#           - name: MY_POD_IP
+#             valueFrom:
+#               fieldRef:
+#                 fieldPath: status.podIP
+#         ports:
+#         - name: http
+#           containerPort: 80
+#         - name: https
+#           containerPort: 443
+# ---
+# apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+# kind: Deployment
+# metadata:
+#   name: nodeos-ingress-deployment
+#   
+# spec:
+#   selector:
+#     matchLabels:
+#       app: nodeos-ingress
+#   template:
+#     metadata:
+#       labels:
+#         app: nodeos-ingress
+#     spec:
+#       containers:
+#       - name: nginx
+#         image: nginx:1.19 # Update the version of nginx from 1.14.2 to 1.16.1
+#         ports:
+#         - name: http
+#           containerPort: 80
+#         - name: https
+#           containerPort: 443
+# ---
+# apiVersion: k8s.nginx.org/v1
+# kind: VirtualServer
+# metadata:
+#   name: nodeos-ingress
+#   
+# spec:
+#   host: helixious.local
+#   upstreams:
+#   - name: http
+#     service: nodeos-svc
+#     port: 80
+#   - name: https
+#     service: nodeos-svc
+#     port: 443
+#   - name: server
+#     service: nodeos-svc
+#     port: 8888
+#   - name: p2p
+#     service: nodeos-svc
+#     port: 9000
+#   routes:
+#   - path: /
+#     action:
+#       pass: http
+#   - path: /nodeos
+#     action:
+#       pass: server
+#   rules:
+#   - host: helixious.local
+#     http:
+#       paths:
+#       - path: /
+#         backend:
+#           serviceName: nodeos-svc
+#           servicePort: 8888
+#       - path: /master
+#         backend:
+#           serviceName: nodeos-svc
+#           servicePort: 8888
+#       - path: /master/p2p
+#         backend:
+#           serviceName: nodeos-svc
+#           servicePort: 9000
+# apiVersion: networking.k8s.io/v1beta1
+# kind: IngressClass
+# metadata:
+#   name: nodeos-external-lb
+# spec:
+#   controller: example.com/ingress-controller
+#   parameters:
+#     apiGroup: k8s.example.com/v1alpha
+#     kind: IngressParameters
+#     name: nodeos-external-lb
